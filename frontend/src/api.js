@@ -100,3 +100,19 @@ export const generateQR = async (locationId, ttlHours = null) => {
 export const getLeaderboard = async (limit = 10) => {
   return request(`/leaderboard?limit=${limit}`);
 };
+
+// Shop
+export const getProducts = async () => {
+  return request('/shop');
+};
+
+export const purchaseProduct = async (productId) => {
+  return request('/shop/purchase', {
+    method: 'POST',
+    body: JSON.stringify({ product_id: productId }),
+  });
+};
+
+export const getPurchaseHistory = async () => {
+  return request('/shop/purchases/history');
+};

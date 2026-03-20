@@ -4,6 +4,7 @@ import Profile from './components/Profile';
 import Scanner from './components/Scanner';
 import Leaderboard from './components/Leaderboard';
 import Admin from './components/Admin';
+import Shop from './components/Shop';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -74,6 +75,10 @@ function App() {
     }
   };
 
+  const handlePurchase = (newBalance) => {
+    setUser(prev => ({ ...prev, balance: newBalance }));
+  };
+
   if (loading) {
     return (
       <div className="container">
@@ -114,6 +119,12 @@ function App() {
           Скан
         </button>
         <button 
+          className={`nav-btn ${activeTab === 'shop' ? 'active' : ''}`}
+          onClick={() => setActiveTab('shop')}
+        >
+          Магазин
+        </button>
+        <button 
           className={`nav-btn ${activeTab === 'leaders' ? 'active' : ''}`}
           onClick={() => setActiveTab('leaders')}
         >
@@ -131,6 +142,7 @@ function App() {
 
       {activeTab === 'profile' && <Profile user={user} />}
       {activeTab === 'scan' && <Scanner onSuccess={handleScanSuccess} />}
+      {activeTab === 'shop' && <Shop userBalance={user.balance} onPurchase={handlePurchase} />}
       {activeTab === 'leaders' && <Leaderboard />}
       {activeTab === 'admin' && isAdmin && <Admin />}
     </div>
