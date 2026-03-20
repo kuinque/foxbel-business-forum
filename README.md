@@ -1,4 +1,4 @@
-# Loyalty System - Telegram Mini App
+# Foxbel Loyalty System - Telegram Mini App
 
 Система лояльности с QR-кодами для Telegram Mini App.
 
@@ -6,15 +6,16 @@
 
 - 🎯 **Личный кабинет** — баланс баллов и история начислений
 - 📱 **Сканирование QR** — начисление баллов за посещение точек
-- 🛍️ **Магазин** — обмен баллов на товары
+- 🛍️ **Магазин** — обмен баллов на мерч (футболки, худи, кепки, стикеры и др.)
+- 🏆 **Лидерборд** — топ пользователей по баллам
 - 🔐 **Авторизация** — через Telegram Mini App (initData)
-- 👨‍💼 **Админ-панель** — управление точками, QR-кодами и товарами
+- 👨‍💼 **Админ-панель** — управление точками и генерация QR-кодов
 
 ## Технологии
 
-- **Backend**: FastAPI, SQLAlchemy, Alembic, PostgreSQL, Redis
-- **Frontend**: React (Telegram Mini App)
-- **Инфраструктура**: Docker, Docker Compose
+- **Backend**: FastAPI, SQLAlchemy 2.0 (async), Alembic, PostgreSQL, asyncpg
+- **Frontend**: React 18, Vite, Telegram Web App SDK
+- **Инфраструктура**: Docker, Docker Compose, Nginx
 
 ## Быстрый старт
 
@@ -78,16 +79,42 @@ alembic upgrade head
 
 ## API Endpoints
 
+### Авторизация
 | Метод | Endpoint | Описание |
 |-------|----------|----------|
-| POST | `/api/v1/auth/telegram` | Авторизация через Telegram |
-| GET | `/api/v1/me` | Профиль и баланс |
-| GET | `/api/v1/me/history` | История начислений |
-| POST | `/api/v1/points/scan` | Сканирование QR-кода |
-| GET | `/api/v1/shop/products` | Список товаров |
-| POST | `/api/v1/shop/purchase` | Покупка товара |
-| POST | `/api/v1/admin/locations` | Создание точки |
-| POST | `/api/v1/admin/locations/{id}/qr` | Генерация QR |
+| POST | `/api/v1/auth/telegram` | Авторизация через Telegram initData |
+
+### Профиль
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| GET | `/api/v1/me` | Профиль пользователя с балансом и историей |
+
+### Баллы
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| POST | `/api/v1/points/scan` | Сканирование QR-кода для начисления баллов |
+
+### Магазин
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| GET | `/api/v1/shop` | Список активных товаров |
+| GET | `/api/v1/shop/{product_id}` | Информация о товаре |
+| POST | `/api/v1/shop/purchase` | Покупка товара за баллы |
+| GET | `/api/v1/shop/purchases/history` | История покупок пользователя |
+
+### Лидерборд
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| GET | `/api/v1/leaderboard` | Топ пользователей по баллам |
+
+### Админ-панель
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| GET | `/api/v1/admin/check` | Проверка прав администратора |
+| GET | `/api/v1/admin/locations` | Список всех точек |
+| POST | `/api/v1/admin/locations` | Создание новой точки |
+| POST | `/api/v1/admin/locations/{id}/qr` | Генерация QR-кода для точки |
+| GET | `/api/v1/admin/qr/{token}/image` | Получение изображения QR-кода |
 
 ## Переменные окружения
 
@@ -101,6 +128,19 @@ alembic upgrade head
 | `JWT_EXPIRES_HOURS` | Время жизни JWT (часы) | 168 |
 | `QR_TOKEN_TTL_HOURS` | TTL QR-токена (часы) | 24 |
 | `DEBUG` | Режим отладки | false |
+
+## Мерч в магазине
+
+| Товар | Баллы | Описание |
+|-------|-------|----------|
+| Стикерпак | 100 | Набор из 10 виниловых стикеров |
+| Блокнот | 150 | Блокнот А5 в твёрдой обложке |
+| Носки Foxbel | 200 | Комплект из 3 пар носков |
+| Кепка Foxbel | 300 | Бейсболка с вышитым логотипом |
+| Термокружка | 400 | Термокружка 350мл с логотипом |
+| Футболка Foxbel | 500 | Стильная футболка с логотипом |
+| Худи Foxbel | 800 | Тёплое худи с принтом |
+| Рюкзак Foxbel | 1000 | Городской рюкзак с отделением для ноутбука |
 
 ## Разработка
 
@@ -121,6 +161,9 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-## Лицензия
+## Добавление администратора
 
-MIT
+```bash
+docker compose exec db psql -U loyalty -d loyalty_db -c \
+  "INSERT INTO admins (telegram_id, role) VALUES (<TELEGRAM_ID>, 'admin');"
+```
