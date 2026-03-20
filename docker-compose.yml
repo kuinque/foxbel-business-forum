@@ -1,0 +1,62 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: loyalty_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+    depends_on:
+      - api
+      - frontend
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: loyalty_frontend
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: loyalty_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-loyalty}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-loyalty_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-loyalty_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-loyalty} -d ${POSTGRES_DB:-loyalty_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: loyalty_api
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-loyalty}:${POSTGRES_PASSWORD:-loyalty_secret}@db:5432/${POSTGRES_DB:-loyalty_db}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-key-change-in-production}
+      - JWT_EXPIRES_HOURS=${JWT_EXPIRES_HOURS:-168}
+      - QR_TOKEN_TTL_HOURS=${QR_TOKEN_TTL_HOURS:-24}
+      - DEBUG=${DEBUG:-false}
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
